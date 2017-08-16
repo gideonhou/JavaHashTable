@@ -1,9 +1,12 @@
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedList;
 
 /**
  * 
@@ -15,11 +18,18 @@ import java.util.Set;
  */
 public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, Cloneable, Serializable {
 
+	private double loadFactor; // load factor of hashtable
+	
+	private Set<K> keys; // set of keys. Use hashset
+	
+	private Collection<Map.Entry<Integer, LinkedList<V>>> buckets; // use ArrayList for this
 	/**
 	 * Constructs a new, empty hashtable with a default initial capacity (11) and load factor (0.75).
 	 */
 	public JavaHashTable() {
-		
+		this.loadFactor = .75; // load factor of .75
+		this.keys = new HashSet<K>(11); // initializes a set with a capacity of 11
+		this.buckets = new ArrayList<Map.Entry<Integer, LinkedList<V>>>();
 	}
 	
 	/**
