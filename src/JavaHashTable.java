@@ -4,8 +4,10 @@ import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Vector;
 import java.util.LinkedList;
@@ -185,13 +187,12 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		return returnCollection;
 	}
 
-	/**
+	/** DONE
 	 * Returns an enumeration of the values in this hashtable. Use the Enumeration methods on the returned object to fetch the elements sequentially.
 	 */
 	@Override
 	public Enumeration<V> elements() {
-		
-		Enumeration<V> retEnum = new 
+		Enumeration<V> retEnum = new JavaHashTableValueEnumeration();
 		return retEnum;
 	}
 
@@ -251,22 +252,66 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		return 0;
 	}
 
+	/**
+	 * I am implementing this enumeration implementation using an iterator.
+	 * I know its not a good idea, but I'm not sure how else to implement the 
+	 * nextElement method.
+	 * 
+	 * @author Gideon
+	 *
+	 */
+	private class JavaHashTableKeyEnumeration implements Enumeration<K>{
+
+		Iterator<K> iter;
+		
+		public JavaHashTableKeyEnumeration() {
+			Iterator<K> iter = JavaHashTable.this.keys.iterator();
+		}
+		
+		@Override
+		public boolean hasMoreElements() {		
+			if(this.iter.hasNext()) return true;
+			else return false;
+		}
+
+		@Override
+		public K nextElement() {
+			if(this.hasMoreElements()) return iter.next();
+			else throw new NoSuchElementException();
+		}
+		
+		
+	}
+	
+	/**
+	 * Calls the values() method
+	 * 
+	 * @author Gideon
+	 *
+	 */
 	private class JavaHashTableValueEnumeration implements Enumeration<V> {
 
+		Map.Entry[] values;
+		int counter;
+		
 		protected JavaHashTableValueEnumeration() {
-			
+			this.values = (Map.Entry[]) JavaHashTable.this.values().toArray();
+			this.counter = 0;
 		}
 		
 		@Override
 		public boolean hasMoreElements() {
-			// TODO Auto-generated method stub
-			return false;
+			if(this.counter < this.values.length) return true;
+			else return false;
 		}
 
 		@Override
-		public E nextElement() {
-			// TODO Auto-generated method stub
-			return null;
+		public V nextElement() {
+			if(this.hasMoreElements()) {
+				int current = counter;
+				counter++;
+				return (V) this.values[current].getValue();
+			} else throw new NoSuchElementException();
 		}
 		
 	}
