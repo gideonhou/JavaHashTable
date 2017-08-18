@@ -1,6 +1,7 @@
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -31,15 +32,19 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 * buckets is a collection of entries in which the key is an Integer and the value is a linked list of entries.
 	 * The entries of the linked list are the actual keys and the value is the value.
 	 */
-	private Collection<Map.Entry<Integer, LinkedList<Map.Entry<K,V>>>> buckets; // use ArrayList for this
+	private ArrayList<LinkedList<Map.Entry<K,V>>> buckets; // use ArrayList for this
+	
+	//private LinkedList<Map.Entry<K, V>>[] buckets;
+	private int capacity; // default 11
 	
 	/**	DONE
 	 * Constructs a new, empty hashtable with a default initial capacity (11) and load factor (0.75).
 	 */
 	public JavaHashTable() {
 		this.loadFactor = .75; // load factor of .75
-		this.keys = new HashSet<K>(11); // initializes a set with a capacity of 11
-		this.buckets = new ArrayList<Map.Entry<Integer, LinkedList<Map.Entry<K, V>>>>(11);
+		this.capacity = 11;
+		this.keys = new HashSet<K>(this.capacity); // initializes a set with a capacity of 11
+		this.buckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(Collections.nCopies(this.capacity, null));
 	}
 	
 	/**	DONE
@@ -49,9 +54,10 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	public JavaHashTable(int initialCapacity) {
 		if(initialCapacity < 0) throw new IllegalArgumentException();
+		this.capacity = initialCapacity;
 		this.loadFactor = .75;
-		this.keys = new HashSet<K>(initialCapacity);
-		this.buckets = new ArrayList<Map.Entry<Integer, LinkedList<Map.Entry<K, V>>>>(initialCapacity);
+		this.keys = new HashSet<K>(this.capacity);
+		this.buckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(Collections.nCopies(this.capacity, null));
 	}
 	
 	/** DONE
@@ -62,9 +68,10 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	public JavaHashTable(int initialCapacity, float loadFactor) {
 		if(initialCapacity < 0 || loadFactor < 0) throw new IllegalArgumentException();
+		this.capacity = initialCapacity;
 		this.loadFactor = loadFactor;
 		this.keys = new HashSet<K>(initialCapacity);
-		this.buckets = new ArrayList<Map.Entry<Integer, LinkedList<Map.Entry<K, V>>>>(initialCapacity);
+		this.buckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(Collections.nCopies(this.capacity, null));
 	}
 	
 	/**	DONE
@@ -105,18 +112,17 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	@Override
 	public boolean containsValue(Object arg0) {
 		if(arg0 == null) throw new NullPointerException();
-		for(Map.Entry<
-				Integer, LinkedList<
-				Map.Entry<K, V>>> entry : this.buckets
-				) { // entry is element of buckets(ArrayList)
-			LinkedList<Map.Entry<K, V>> ll = 
-					entry.getValue(); // ll is linked list
-
-			// I really want to use iterator here...
-			for(int i = 0; i < ll.size(); i++) { // iterate through linked list of entries. 
-				if (ll.get(i).getValue().equals(arg0)) return true; // return true if the entry's value matches
+		
+		for(LinkedList<Entry<K, V>> bucket : this.buckets) {
+			if(bucket == null) continue;
+			else {
+				Iterator<Entry<K, V>> linkedListIter = bucket.iterator();
+				while(linkedListIter.hasNext()) {
+					Entry<K, V> el = linkedListIter.next();
+					if(el.getValue().equals(arg0)) return true;
+				}
 			}
-		}
+		}		
 		return false;
 	}
 
@@ -124,16 +130,20 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 * Returns a Set view of the mappings contained in this map.
 	 */
 	@Override
-	public Set<java.util.Map.Entry<K, V>> entrySet() {
-		Set<Map.Entry<K, V>> returnSet = new HashSet<Map.Entry<K, V>>();
+	public Set<Entry<K, V>> entrySet() {
+		Set<Entry<K, V>> returnSet = new HashSet<Entry<K, V>>();
 		
-		for(Map.Entry<
-				Integer, LinkedList<
-				Map.Entry<K, V>>> entry : this.buckets
-				) { // entry is element of buckets(ArrayList)
-			
-			returnSet.addAll((Collection<? extends Map.Entry<K, V>>) entry.getValue());	
+		for(LinkedList<Entry<K, V>> bucket : this.buckets) {
+			if(bucket == null) continue;
+			else {
+				Iterator<Entry<K, V>> linkedListIter = bucket.iterator();
+				while(linkedListIter.hasNext()) {
+					Entry<K, V> el = linkedListIter.next();
+					returnSet.add(el);
+				}
+			}
 		}
+		
 		return returnSet;
 	}
 
@@ -155,8 +165,7 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	@Override
 	public void putAll(Map<? extends K, ? extends V> arg0) {
 		if(arg0 == null) throw new NullPointerException();
-		Set mappingsToPut = arg0.entrySet();
-		for(Map.Entry entry : arg0.entrySet()) {			
+		for(Entry<? extends K, ? extends V> entry : arg0.entrySet()) {			
 			this.put( (K) entry.getKey(), (V) entry.getValue());
 		}
 		return;
@@ -172,16 +181,14 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		
 		ArrayList<V> returnCollection = new ArrayList<V>();
 		
-		for(Map.Entry<
-				Integer, LinkedList<
-				Map.Entry<K, V>>> entry : this.buckets
-				) { // entry is element of buckets(ArrayList)
-			LinkedList<Map.Entry<K, V>> ll = 
-					entry.getValue(); // ll is linked list
-
-			// I really want to use iterator here...
-			for(int i = 0; i < ll.size(); i++) { // iterate through linked list of entries. 
-				returnCollection.add(ll.get(i).getValue());
+		for(LinkedList<Entry<K, V>> bucket : this.buckets) {
+			if(bucket == null) continue;
+			else {
+				Iterator<Entry<K, V>> linkedListIter = bucket.iterator();
+				while(linkedListIter.hasNext()) {
+					Entry<K, V> el = linkedListIter.next();
+					returnCollection.add(el.getValue());
+				}
 			}
 		}
 		return returnCollection;
@@ -196,17 +203,40 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		return retEnum;
 	}
 
-	/**
+	/** DONE
+	 * 
 	 * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key. 
 	 * More formally, if this map contains a mapping from a key k to a value v such that (key.equals(k)), then this method returns v; 
 	 * otherwise it returns null. (There can be at most one such mapping.)
 	 */
 	@Override
 	public V get(Object key) {
-		// TODO Auto-generated method stub
+		if(key == null || !this.containsKey(key)) return null;
+		
+		Integer hash = hash(key.hashCode());
+		
+		LinkedList<Entry<K, V>> ll = this.buckets.get(hash);
+		
+		Iterator<Entry<K, V>> iter = ll.iterator();
+		
+		while(iter.hasNext()) {
+			Entry<K, V> el = iter.next();
+			if(el.getKey().equals(key)) return el.getValue();
+		}
+		
 		return null;
 	}
 
+	/**	DONE
+	 * hash function to call on hash code
+	 * @param hashcode
+	 * @return
+	 */
+	private int hash(int hashcode) {
+		int returnHash = hashcode % this.capacity;
+		return returnHash;
+	}
+	
 	/** DONE
 	 * Tests if this hashtable maps no keys to values.
 	 */
@@ -216,24 +246,73 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		else return false;
 	}
 
-	/**
+	/** DONE
 	 * Returns an enumeration of the keys in this hashtable.
 	 */
 	@Override
 	public Enumeration<K> keys() {
-		// TODO Auto-generated method stub
-		return null;
+		Enumeration<K> retEnumeration = new JavaHashTableKeyEnumeration();
+		return retEnumeration;
 	}
 
-	/**
+	/** DONE
 	 * Maps the specified key to the specified value in this hashtable.
 	 */
 	@Override
 	public V put(K key, V value) {
-		// TODO Auto-generated method stub
-		return null;
+		if(key == null || value == null) throw new NullPointerException();
+		if(this.keys.contains(key)) return null;
+				
+		int hashcode = hash(key.hashCode());
+		
+		Entry<K, V> entryToAdd = new JavaHashTableEntry(key, value);
+		
+		this.putHelper(entryToAdd, hashcode);
+		
+		this.keys.add(key);
+		if( (double) this.keys.size() / (double) this.capacity > this.loadFactor) this.resize();
+		return value;	
 	}
 
+	
+	/**
+	 * helper method for adding
+	 */
+	private void putHelper(Entry<K, V> inputEntry, int hashcode) {
+		
+		LinkedList<Entry<K,V>> bucket = this.buckets.get(hashcode);
+
+		if(bucket == null) { // new item
+			LinkedList<Entry<K,V>> toAdd = new LinkedList<Entry<K, V>>();
+			toAdd.add(inputEntry);
+			this.buckets.set(hashcode, toAdd);
+		} else {	// linked list already exists so we append to the end of the linked list
+			bucket.add(inputEntry);
+		}
+		return;	
+	}
+	
+	/**
+	 * Function to resize map when load factor is exceeded
+	 */
+	private void resize() {
+		this.capacity = this.capacity * 2;
+		ArrayList<LinkedList<Entry<K,V>>> newBuckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(
+				Collections.nCopies(this.capacity, null)); // new buckets collection with a new capacity
+		
+		@SuppressWarnings("unchecked")
+		Entry<K, V>[] entryArray  = (
+				Entry<K, V>[]) this.entrySet().toArray(); // entrySet() returns a Set object of Entry<K, V>
+		
+		this.buckets = newBuckets; // set this.buckets to newBuckets here because putHelper operates on this.buckets
+		
+		for(Entry<K, V> entry : entryArray) { // 
+			int hashcode = hash(entry.getKey().hashCode());
+			putHelper(entry, hashcode);
+		}
+
+		return;
+	}
 	/**
 	 * Removes the key (and its corresponding value) from this hashtable.
 	 */
@@ -243,16 +322,15 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		return null;
 	}
 
-	/**
+	/**	DONE
 	 * Returns the number of keys in this hashtable.
 	 */
 	@Override
 	public int size() {
-		// TODO Auto-generated method stub
-		return 0;
+		return this.keys.size();
 	}
 
-	/**
+	/**	DONE
 	 * I am implementing this enumeration implementation using an iterator.
 	 * I know its not a good idea, but I'm not sure how else to implement the 
 	 * nextElement method.
@@ -283,6 +361,37 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		
 	}
 	
+	
+	private class JavaHashTableEntry implements Map.Entry<K, V> {
+
+		private K key;
+		
+		private V value;
+		
+		public JavaHashTableEntry(K key, V value) {
+			if(key == null || value == null) throw new NullPointerException();
+			this.key = key;
+			this.value = value;
+		}
+		
+		@Override
+		public K getKey() {
+			return this.key;
+		}
+
+		@Override
+		public V getValue() {
+			return this.value;
+		}
+
+		@Override
+		public V setValue(V value) {
+			this.value = value;
+			return value;
+		}
+		
+		
+	}
 	/**
 	 * Calls the values() method
 	 * 
