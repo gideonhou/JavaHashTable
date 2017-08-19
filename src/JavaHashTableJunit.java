@@ -177,5 +177,12 @@ public class JavaHashTableJunit {
 		Enumeration keys = table0.keys();
 		Enumeration values = table0.elements();
 		
+		while(keys.hasMoreElements()) {
+			keys.nextElement();
+		}
+		
+		while(values.hasMoreElements()) {
+			values.nextElement();
+		}
 	}
 }

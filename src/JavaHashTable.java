@@ -364,10 +364,12 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	private class JavaHashTableKeyEnumeration implements Enumeration<K>{
 
+		Set<K> set;
 		Iterator<K> iter;
 		
 		public JavaHashTableKeyEnumeration() {
-			Iterator<K> iter = JavaHashTable.this.keys.iterator();
+			this.set = JavaHashTable.this.keySet();
+			this.iter = this.set.iterator();
 		}
 		
 		@Override
@@ -381,8 +383,6 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 			if(this.hasMoreElements()) return iter.next();
 			else throw new NoSuchElementException();
 		}
-		
-		
 	}
 	
 	
@@ -424,17 +424,17 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	private class JavaHashTableValueEnumeration implements Enumeration<V> {
 
-		Map.Entry[] values;
+		ArrayList<V> values;
 		int counter;
 		
 		protected JavaHashTableValueEnumeration() {
-			this.values = (Map.Entry[]) JavaHashTable.this.values().toArray();
+			this.values = (ArrayList<V>) JavaHashTable.this.values();
 			this.counter = 0;
 		}
 		
 		@Override
 		public boolean hasMoreElements() {
-			if(this.counter < this.values.length) return true;
+			if(this.counter < this.values.size()) return true;
 			else return false;
 		}
 
@@ -443,7 +443,7 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 			if(this.hasMoreElements()) {
 				int current = counter;
 				counter++;
-				return (V) this.values[current].getValue();
+				return this.values.get(current);
 			} else throw new NoSuchElementException();
 		}
 		
