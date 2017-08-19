@@ -53,7 +53,7 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 * @param initialCapacity
 	 */
 	public JavaHashTable(int initialCapacity) {
-		if(initialCapacity < 0) throw new IllegalArgumentException();
+		if(initialCapacity <= 0) throw new IllegalArgumentException();
 		this.capacity = initialCapacity;
 		this.loadFactor = .75;
 		this.keys = new HashSet<K>(this.capacity);
@@ -64,12 +64,12 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 * Constructs a new, empty hashtable with the specified initial capacity and the specified load factor.
 	 * 
 	 * @param initialCapacity
-	 * @param loadFactor
+	 * @param d
 	 */
-	public JavaHashTable(int initialCapacity, float loadFactor) {
-		if(initialCapacity < 0 || loadFactor < 0) throw new IllegalArgumentException();
+	public JavaHashTable(int initialCapacity, double d) {
+		if(initialCapacity <= 0 || d <= 0) throw new IllegalArgumentException();
 		this.capacity = initialCapacity;
-		this.loadFactor = loadFactor;
+		this.loadFactor = d;
 		this.keys = new HashSet<K>(initialCapacity);
 		this.buckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(Collections.nCopies(this.capacity, null));
 	}
@@ -81,6 +81,9 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	public JavaHashTable(Map<? extends K, ? extends V> t) {
 		this.loadFactor = .75;
+		this.capacity = 11;
+		this.keys = new HashSet<K>(this.capacity);
+		this.buckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(Collections.nCopies(this.capacity, null));
 		this.putAll(t);		
 	}
 	
@@ -262,14 +265,13 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	public V put(K key, V value) {
 		if(key == null || value == null) throw new NullPointerException();
 		if(this.keys.contains(key)) return null;
-				
+		this.keys.add(key);	
 		int hashcode = hash(key.hashCode());
 		
 		Entry<K, V> entryToAdd = new JavaHashTableEntry(key, value);
 		
-		this.putHelper(entryToAdd, hashcode);
+		this.putHelper(entryToAdd, hashcode);	
 		
-		this.keys.add(key);
 		if( (double) this.keys.size() / (double) this.capacity > this.loadFactor) this.resize();
 		return value;	
 	}
@@ -300,13 +302,16 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 		ArrayList<LinkedList<Entry<K,V>>> newBuckets = new ArrayList<LinkedList<Map.Entry<K, V>>>(
 				Collections.nCopies(this.capacity, null)); // new buckets collection with a new capacity
 		
+		/*
 		@SuppressWarnings("unchecked")
 		Entry<K, V>[] entryArray  = (
 				Entry<K, V>[]) this.entrySet().toArray(); // entrySet() returns a Set object of Entry<K, V>
+		*/
+		Set<Entry<K, V>> entrySet = this.entrySet();
 		
 		this.buckets = newBuckets; // set this.buckets to newBuckets here because putHelper operates on this.buckets
 		
-		for(Entry<K, V> entry : entryArray) { // 
+		for(Entry<K, V> entry : entrySet) { // 
 			int hashcode = hash(entry.getKey().hashCode());
 			putHelper(entry, hashcode);
 		}
@@ -318,8 +323,27 @@ public class JavaHashTable<K, V> extends Dictionary<K, V> implements Map<K, V>, 
 	 */
 	@Override
 	public V remove(Object key) {
-		// TODO Auto-generated method stub
-		return null;
+		if(key == null) throw new NullPointerException();
+		if(!this.containsKey(key)) return null;
+		
+		int hashcode = hash(key.hashCode());
+		
+		LinkedList<Entry<K, V>> ll = this.buckets.get(hashcode);
+		
+		if(ll == null) return null;
+		else {
+			Iterator<Entry<K, V>> iter = ll.iterator();
+			while(iter.hasNext()) {
+				Entry<K, V> el = iter.next();
+				if(el.getKey().equals(key)) {
+					this.keys.remove(key);
+					V returnValue = el.getValue();
+					iter.remove();
+					return returnValue;
+				}
+			}
+			return null;
+		}
 	}
 
 	/**	DONE
